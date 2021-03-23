@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>滑动轮播图</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            text-decoration: none;
+        }
+
+        .carousel {
+            width: 900px;
+            height: 280px;
+            margin: 10px auto;
+            overflow: hidden; /*溢出部分隐藏*/
+        }
+
+        .carousel #pics {
+            position: relative; /*没有这句,对ul的left属性设置无效*/
+            display: flex;
+            left: -900px;
+            width: fit-content; /*ul宽度随li自适应*/
+            transition: all 1s ease; /*保证图片平滑移动*/
+        }
+
+        .carousel #pics li {
+            width: 900px;
+            height: 280px;
+        }
+
+        .carousel #pics li img {
+            /*设置图片与li大小始终保持一致*/
+            width: 100%;
+            height: auto;
+        }
+
+        .carousel #dots {
+            position: relative;
+            width: fit-content; /*ul宽度随li自适应*/
+            height: 15px;
+            top: -40px;
+            margin: auto;
+        }
+
+        .carousel #dots li {
+            position: relative;
+            float: left; /*若转换行内块元素会有默认margin padding值*/
+            width: 15px;
+            height: 15px;
+            margin: 0px 6px;
+            border: 1px solid gray;
+            background-color: #ffffff;
+            border-radius: 50%;
+            opacity: .5;
+        }
+
+        .move_btns {
+            position: relative;
+            float: left;
+            width: 100%;
+            height: 40px;
+            top: -180px;
+        }
+
+        .move_btns > div {
+            width: 25px;
+            height: 100%;
+        }
+
+        .move_btns > div:hover {
+            background-color: whitesmoke;
+            opacity: .5;
+            transition: all 1s ease;
+        }
+
+        .move_btns div div {
+            width: 20px;
+            height: 20px;
+            border-top: solid 3px gray;
+            border-right: solid 3px gray;
+        }
+
+        .move_btns .leftbtn {
+            float: left;
+        }
+
+        .move_btns .leftbtn .move_l {
+            transform: rotate(-135deg);
+            margin: 8px;
+        }
+
+        .move_btns .rightbtn {
+            float: right;
+        }
+
+        .move_btns .rightbtn .move_r {
+            transform: rotate(45deg);
+            margin: 8px 0px 8px -5px;
+        }
+    </style>
+</head>
+<body>
+<div class="carousel">
+    <ul id="pics">
+        <!-- 头部插入一张图片保证首尾平滑过渡,头部插入是为了第一轮点击左划时平滑过渡-->
+        <!-- 尾部插入一张图片保证首尾平滑过渡,尾部插入是为了第一轮结束时顺利到第二轮-->
+        <li><img src="images2/carousel7.jpg"></li>
+        <li><img src="images2/carousel1.jpg"></li>
+        <li><img src="images2/carousel2.jpg"></li>
+        <li><img src="images2/carousel3.jpg"></li>
+        <li><img src="images2/carousel4.jpg"></li>
+        <li><img src="images2/carousel5.jpg"></li>
+        <li><img src="images2/carousel6.jpg"></li>
+        <li><img src="images2/carousel7.jpg"></li>
+        <li><img src="images2/carousel1.jpg"></li>
+    </ul>
+    <ul id="dots">
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+    </ul>
+    <div class="move_btns">
+        <div class="leftbtn" onclick="move_prior()">
+            <div class="move_l"></div>
+        </div>
+        <div class="rightbtn" onclick="move_next()">
+            <div class="move_r"></div>
+        </div>
+    </div>
+</div>
+<button class="clear_btn" onclick="clearMove()">清除定时器</button>
+</body>
+<script>
+    "use strict"
+    // 必须经过html加载的DOM元素
+    let ul = document.getElementById("pics");
+    let pics = ul.querySelectorAll("li");  //获取轮播图板块中的图片信息
+    let dots = document.getElementById("dots").querySelectorAll("li");  //获取小圆点信息
+
+    let index = 0;  //图片初始下标值为0
+    let timer = null; //自动轮播定时器
+    let manual_timer = null;  //手动轮播定时器，判断边界图片偏移量跳转
+    let op = "auto"; //操作方式为自动轮播或手动轮播标志位
+
+    //函数激活小圆点，即将对应小圆点透明度消除
+    function activeDot(active_index) {
+        //该参数index实际比NodeList对应下标大1
+        active_index = active_index >= dots.length ? (active_index - dots.length) : active_index;  //index大于长度时恰是整个ul一次循环结束后
+        // console.log("三元表达式之后的active_index=" + active_index);
+        dots[active_index].style.opacity = "1";
+        dots[active_index].style.transition = "all 1s ease";
+        for (let i = 0; i < dots.length; i++) {
+            if (active_index != i) {
+                dots[i].style.opacity = ".5";
+                dots[i].style.transition = "none";
+            }
+        }
+    }
+
+    function judge_back() {  //判断是否需要迅速退回函数
+        if (index === pics.length - 2) {
+            setTimeout(() => {
+                index = op == "auto" ? 0 : 1;  //若为自动播放改为0，否则为1
+                //若为按钮轮播，则第一轮的最后一张应直接跳到第二轮的第二张，因为第一轮的最后一张与第二轮的第一张相同
+                ul.style.left = "-" + 900 * (index + 1) + "px";
+                ul.style.transition = "none";
+                // console.log("迅速退回原位");
+                // 这里要直接设置过渡css样式,保证迅速回到原位
+            }, 1000)
+        } else
+            ul.style.transition = "all 1s ease";
+    }
+
+    function move() { //自动轮播函数
+        console.log(index + "NO的动画效果" + ul.style.transition)
+        ul.style.left = -900 * (index + 1) + "px";
+        if (index == -1) {
+            index = 6;
+            setTimeout(() => {
+                ul.style.left = -900 * (index + 1) + "px";
+                ul.style.transition = "none";
+            }, 1000)
+        }
+        //不能用for循环移动ul,应该是指定时间内移动整个ul,循环li没有意义
+        judge_back();
+        //根据index决定小圆点背景色
+        // console.log("调用激活圆点函数传入index=" + index);
+        activeDot(index);  //该行代码不能放在if前,否则第二轮循环时第一二张图片切换小圆点的切换快于图片
+    }
+
+    function autoMovePics() {
+        timer = setInterval(() => {
+            move();
+            index++;  //该句放在move函数前,保证第二轮的一二张图片的下一张跳转顺畅
+            // console.log("自动轮播后index=" + index);
+        }, 3000);
+    }
+
+    // 向前一张图片移动
+    function move_prior() {
+        clearMove();
+        op = "manual";
+        index--;
+        judge_back();
+        move();
+        op = "auto";
+        autoMovePics();
+    }
+
+    // 向后一张图片移动
+    function move_next() {
+        clearMove();  //清除定时器,定时器为异步函数,不清楚的话将始终在执行
+        op = "manual";
+        index++;
+        judge_back();
+        move();
+        op = "auto";  //手动操作结束后变更标志位
+        autoMovePics();
+    }
+
+    function clearMove() {
+        clearInterval(timer);
+    }
+
+    //小圆点点击切换图片事件
+    function dotsClick() {
+        for (let i = 0; i < dots.length; i++) {
+            dots[i].addEventListener("click", () => {
+                index = i;
+                move();
+            })
+        }
+    }
+
+    activeDot(0);  //默认第一个圆点处于激活状态
+    //调用代码需放在id="pics"元素后，否则取到的是空值
+    autoMovePics();
+    dotsClick();
+</script>
+</html>
