@@ -3,6 +3,7 @@ function $(id) {
     return document.getElementById(id)
 }
 
+
 //页面完全加载完成后执行脚本代码
 window.onload = function () {
 
